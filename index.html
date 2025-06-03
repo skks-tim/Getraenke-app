@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligente Getränkeabrechnung</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        @font-face {
+            font-family: 'FirmaFont';
+            src: url('Tipico_Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        body {
+            font-family: 'FirmaFont', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url('hintergrund.jpg') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: transparent;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.5);
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.5);
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .nav-tab.active {
+            background: rgba(255, 255, 255, 0.5);
+            border-bottom: 3px solid #2196F3;
+            color: #2196F3;
+        }
+        
+        .nav-tab:hover {
+            background: #e0e0e0;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        .btn {
+            background: #2196F3;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #4CAF50;
+        }
+        
+        .btn-success:hover {
+            background: #45a049;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+        }
+        
+        .btn-danger:hover {
+            background: #da190b;
+        }
+        
+        .btn-warning {
+            background: #ff9800;
+        }
+        
+        .btn-warning:hover {
+            background: #e68900;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .table th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .table tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 4px solid #2196F3;
+        }
+        
+        .stat-card h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: rgba(255, 255, 255, 0.5);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+        
+        .close {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+        
+        .close:hover {
+            color: #000;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-tabs {
+                flex-direction: column;
+            }
+        }
+
+        /* Dark Mode */
+        body.dark { background: #121212; }
+        /* Zusätzliche Dark-Mode-Regeln für Input, Buttons, Tabellen, Texte */
+        body.dark .form-group input,
+        body.dark .form-group select {
+            background-color: #333;
+            color: #eee;
+            border-color: #555;
+        }
+        body.dark .btn {
+            background-color: #444;
+            color: #eee;
+        }
+        body.dark .btn:hover {
+            background-color: #666;
+        }
+        body.dark .table th {
+            background-color: #222;
+            color: #ddd;
+        }
+        body.dark .table td {
+            color: #ccc;
+        }
+        body.dark .nav-tab:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+        body.dark .header h1,
+        body.dark .header p {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🥤 Intelligente Getränkeabrechnung</h1>
+        <p>Zentrale Eingabemaske mit automatischer Berechnung</p>
+        <button id="darkModeToggle" class="btn">🌙 Dark Mode</button>
+        <button id="backupBtn" class="btn">💾 Backup</button>
+        <button id="importBtn" class="btn">📂 Import</button>
+        <input type="file" id="importFile" accept=".json" style="display:none">
+        <button id="resetBtn" class="btn btn-danger">↻ Reset</button>
+    </div>
+    <div class="container">
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('eingaben')">📋 Eingaben</button>
+            <button class="nav-tab" onclick="showTab('produkte')">🥤 Produkte</button>
+            <button class="nav-tab" onclick="showTab('auswertung')">📊 Auswertung</button>
+            <button class="nav-tab" onclick="showTab('anleitung')">📖 Anleitung</button>
+        </div>
+        
+        <!-- Eingaben Tab -->
+        <div id="eingaben" class="tab-content active">
+            <h2>Zentrale Eingabemaske</h2>
+            <form id="eingabeForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="datum">Datum:</label>
+                        <input type="date" id="datum" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="typ">Typ:</label>
+                        <select id="typ" onchange="toggleFields()" required>
+                            <option value="">Bitte wählen...</option>
+                            <option value="Kaltgetränk">Kaltgetränk</option>
+                            <option value="Heißgetränk">Heißgetränk</option>
+                            <option value="GWS Eingang">GWS Eingang</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="produktFields" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="produkt">Produkt:</label>
+                            <select id="produkt" onchange="updatePreise()">
+                                <option value="">Bitte wählen...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="menge">Menge:</label>
+                            <input type="number" id="menge" min="1" step="1">
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="heissFields" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="zaehlerAlt">Zähler alt:</label>
+                            <input type="number" id="zaehlerAlt" min="0" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="zaehlerNeu">Zähler neu:</label>
+                            <input type="number" id="zaehlerNeu" min="0" step="1">
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="gwsFields" style="display: none;">
+                    <div class="form-group">
+                        <label for="betragGws">Betrag GWS (€):</label>
+                        <input type="number" id="betragGws" min="0" step="0.01">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success">Eintrag hinzufügen</button>
+            </form>
+            
+            <div id="eingabenTabelle">
+                <h3>Alle Eingaben</h3>
+                <table class="table" id="eingabenTable">
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Typ</th>
+                            <th>Produkt</th>
+                            <th>Menge</th>
+                            <th>Einnahmen</th>
+                            <th>Marge</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eingabenTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Produkte Tab -->
+        <div id="produkte" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Produktverwaltung</h2>
+                <button class="btn btn-success" onclick="showProduktModal()">+ Neues Produkt</button>
+            </div>
+            
+            <table class="table" id="produkteTable">
+                <thead>
+                    <tr>
+                        <th>Produkt</th>
+                        <th>Einkaufspreis (€)</th>
+                        <th>Verkaufspreis (€)</th>
+                        <th>Pfand (€)</th>
+                        <th>Marge (€)</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="produkteTableBody">
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Auswertung Tab -->
+        <div id="auswertung" class="tab-content">
+            <h2>Auswertung & Kennzahlen</h2>
+            
+            <div class="stats-grid" id="statsGrid">
+                <!-- Wird dynamisch gefüllt -->
+            </div>
+            
+            <div id="statusMessage"></div>
+        </div>
+        
+        <!-- Anleitung Tab -->
+        <div id="anleitung" class="tab-content">
+            <h2>📖 Bedienungsanleitung</h2>
+            
+            <div class="success">
+                <h3>🚀 Erste Schritte</h3>
+                <ol>
+                    <li><strong>Produkte verwalten:</strong> Gehen Sie zum Tab "Produkte" und fügen Sie Ihre Getränke mit Preisen hinzu.</li>
+                    <li><strong>Transaktionen erfassen:</strong> Wechseln Sie zum Tab "Eingaben" und tragen Sie Ihre Verkäufe ein.</li>
+                    <li><strong>Auswertung prüfen:</strong> Im Tab "Auswertung" sehen Sie alle wichtigen Kennzahlen auf einen Blick.</li>
+                </ol>
+            </div>
+            
+            <h3>📋 Eingabetypen erklärt</h3>
+            <ul>
+                <li><strong>Kaltgetränk:</strong> Für den Verkauf von Flaschen/Dosen. Benötigt: Produkt auswählen + Anzahl eingeben.</li>
+                <li><strong>Heißgetränk:</strong> Für Kaffeemaschinen mit Zähler. Benötigt: Alter und neuer Zählerstand.</li>
+                <li><strong>GWS Eingang:</strong> Für tatsächliche Geldeinnahmen. Benötigt: Betrag in Euro.</li>
+            </ul>
+            
+            <h3>🎯 Automatische Berechnungen</h3>
+            <ul>
+                <li>Preise werden automatisch aus der Produktdatenbank übernommen</li>
+                <li>Margen und Gesamteinnahmen werden automatisch berechnet</li>
+                <li>Das System warnt bei Verlusten oder Fehlern</li>
+            </ul>
+            
+            <div class="warning">
+                <h3>⚠️ Warnsystem</h3>
+                <ul>
+                    <li><strong>Marge &lt; 0:</strong> Verlustgeschäft</li>
+                    <li><strong>Fehlende Preise:</strong> Überprüfung erforderlich</li>
+                    <li><strong>Zähler neu &lt; alt:</strong> Eingabefehler</li>
+                    <li><strong>Soll/Ist Abweichung &gt; ±10€:</strong> Kontrolle nötig</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Produkt Modal -->
+    <div id="produktModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeProduktModal()">&times;</span>
+            <h2 id="modalTitle">Neues Produkt hinzufügen</h2>
+            <form id="produktForm">
+                <input type="hidden" id="editIndex" value="-1">
+                <div class="form-group">
+                    <label for="produktName">Produktname:</label>
+                    <input type="text" id="produktName" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="einkaufspreis">Einkaufspreis (€):</label>
+                        <input type="number" id="einkaufspreis" min="0" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="verkaufspreis">Verkaufspreis (€):</label>
+                        <input type="number" id="verkaufspreis" min="0" step="0.01" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="pfand">Pfand (€):</label>
+                    <input type="number" id="pfand" min="0" step="0.01" value="0">
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn" onclick="closeProduktModal()">Abbrechen</button>
+                    <button type="submit" class="btn btn-success">Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Globale Variablen
+        let produkte = [];
+        let eingaben = [];
+        
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', function() {
+            // Heutiges Datum setzen
+            document.getElementById('datum').valueAsDate = new Date();
+            
+            // Daten laden
+            loadData();
+            
+            // Standard-Produkte hinzufügen falls keine vorhanden
+            if (produkte.length === 0) {
+                addDefaultProducts();
+            }
+            
+            updateProduktDropdown();
+            updateTables();
+            updateStats();
+    // Dark Mode Toggle
+    document.getElementById('darkModeToggle').addEventListener('click', function() {
+        document.body.classList.toggle('dark');
+        if (document.body.classList.contains('dark')) {
+            this.textContent = '☀️ Light Mode';
+        } else {
+            this.textContent = '🌙 Dark Mode';
+        }
+    });
+
+    // Hamburger Menu Toggle
+    document.getElementById('menuToggle').addEventListener('click', function() {
+        document.querySelector('.nav-tabs').classList.toggle('open');
+    });
+        });
+        
+        // Standard-Produkte hinzufügen
+        function addDefaultProducts() {
+            const defaultProducts = [
+                { name: 'Cola', einkauf: 0.47, verkauf: 2.00, pfand: 0.25 },
+                { name: 'Cola Zero', einkauf: 0.47, verkauf: 2.00, pfand: 0.25 },
+                { name: 'Fanta', einkauf: 0.47, verkauf: 2.00, pfand: 0.25 },
+                { name: 'Mezzo Mix', einkauf: 0.47, verkauf: 2.00, pfand: 0.25 },
+                { name: 'Wasser', einkauf: 0.47, verkauf: 2.00, pfand: 0.25 },
+                { name: 'Red Bull', einkauf: 0.88, verkauf: 2.50, pfand: 0 },
+                { name: 'Kaffee', einkauf: 0.00, verkauf: 1.00, pfand: 0 }
+            ];
+            defaultProducts.forEach(product => {
+                produkte.push(product);
+            });
+            saveData();
+        }
+        
+        // Tab-Funktionalität
+        function showTab(tabName) {
+            // Alle Tabs verstecken
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Alle Tab-Buttons deaktivieren
+            const buttons = document.querySelectorAll('.nav-tab');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            // Gewählten Tab anzeigen
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            // Daten aktualisieren
+            if (tabName === 'auswertung') {
+                updateStats();
+            }
+        }
+        
+        // Felder je nach Typ ein-/ausblenden
+        function toggleFields() {
+            const typ = document.getElementById('typ').value;
+            const produktFields = document.getElementById('produktFields');
+            const heissFields = document.getElementById('heissFields');
+            const gwsFields = document.getElementById('gwsFields');
+            
+            // Alle Felder verstecken
+            produktFields.style.display = 'none';
+            heissFields.style.display = 'none';
+            gwsFields.style.display = 'none';
+            
+            // Relevante Felder anzeigen
+            if (typ === 'Kaltgetränk') {
+                produktFields.style.display = 'block';
+            } else if (typ === 'Heißgetränk') {
+                produktFields.style.display = 'block';
+                heissFields.style.display = 'block';
+            } else if (typ === 'GWS Eingang') {
+                gwsFields.style.display = 'block';
+            }
+        }
+        
+        // Produkt-Dropdown aktualisieren
+        function updateProduktDropdown() {
+            const select = document.getElementById('produkt');
+            select.innerHTML = '<option value="">Bitte wählen...</option>';
+            
+            produkte.forEach((produkt, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = produkt.name;
+                select.appendChild(option);
+            });
+        }
+        
+        // Preise aktualisieren bei Produktauswahl
+        function updatePreise() {
+            const produktIndex = document.getElementById('produkt').value;
+            if (produktIndex !== '') {
+                const produkt = produkte[produktIndex];
+                // Hier könnten Preise angezeigt werden
+            }
+        }
+        
+        // Eingabe-Formular verarbeiten
+        document.getElementById('eingabeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const datum = document.getElementById('datum').value;
+            const typ = document.getElementById('typ').value;
+            
+            let eintrag = {
+                datum: datum,
+                typ: typ,
+                timestamp: new Date().getTime()
+            };
+            
+            if (typ === 'Kaltgetränk') {
+                const produktIndex = document.getElementById('produkt').value;
+                const menge = parseInt(document.getElementById('menge').value);
+                
+                if (produktIndex === '' || !menge) {
+                    alert('Bitte Produkt und Menge eingeben!');
+                    return;
+                }
+                
+                const produkt = produkte[produktIndex];
+                eintrag.produkt = produkt.name;
+                eintrag.menge = menge;
+                eintrag.einkaufspreis = produkt.einkauf;
+                eintrag.verkaufspreis = produkt.verkauf;
+                eintrag.pfand = produkt.pfand;
+                eintrag.kosten = produkt.einkauf * menge;
+                eintrag.einnahmen = produkt.verkauf * menge;
+                eintrag.pfandEinnahmen = produkt.pfand * menge;
+                eintrag.marge = (produkt.verkauf - produkt.einkauf) * menge;
+                
+            } else if (typ === 'Heißgetränk') {
+                const produktIndex = document.getElementById('produkt').value;
+                const zaehlerAlt = parseInt(document.getElementById('zaehlerAlt').value);
+                const zaehlerNeu = parseInt(document.getElementById('zaehlerNeu').value);
+                
+                if (produktIndex === '' || zaehlerAlt === undefined || zaehlerNeu === undefined) {
+                    alert('Bitte alle Felder ausfüllen!');
+                    return;
+                }
+                
+                if (zaehlerNeu < zaehlerAlt) {
+                    alert('Neuer Zählerstand kann nicht kleiner als alter Zählerstand sein!');
+                    return;
+                }
+                
+                const produkt = produkte[produktIndex];
+                const differenz = zaehlerNeu - zaehlerAlt;
+                
+                eintrag.produkt = produkt.name;
+                eintrag.menge = differenz;
+                eintrag.zaehlerAlt = zaehlerAlt;
+                eintrag.zaehlerNeu = zaehlerNeu;
+                eintrag.einkaufspreis = produkt.einkauf;
+                eintrag.verkaufspreis = produkt.verkauf;
+                eintrag.kosten = produkt.einkauf * differenz;
+                eintrag.einnahmen = produkt.verkauf * differenz;
+                eintrag.marge = (produkt.verkauf - produkt.einkauf) * differenz;
+                
+            } else if (typ === 'GWS Eingang') {
+                const betrag = parseFloat(document.getElementById('betragGws').value);
+                
+                if (!betrag) {
+                    alert('Bitte Betrag eingeben!');
+                    return;
+                }
+                
+                eintrag.betragGws = betrag;
+            }
+            
+            eingaben.push(eintrag);
+            saveData();
+            updateTables();
+            updateStats();
+            
+            // Formular zurücksetzen
+            this.reset();
+            document.getElementById('datum').valueAsDate = new Date();
+            toggleFields();
+            
+            alert('Eintrag erfolgreich hinzugefügt!');
+        });
+        
+        // Produkt-Modal anzeigen
+        function showProduktModal(index = -1) {
+            const modal = document.getElementById('produktModal');
+            const title = document.getElementById('modalTitle');
+            const form = document.getElementById('produktForm');
+            
+            if (index >= 0) {
+                // Bearbeiten
+                title.textContent = 'Produkt bearbeiten';
+                const produkt = produkte[index];
+                document.getElementById('editIndex').value = index;
+                document.getElementById('produktName').value = produkt.name;
+                document.getElementById('einkaufspreis').value = produkt.einkauf;
+                document.getElementById('verkaufspreis').value = produkt.verkauf;
+                document.getElementById('pfand').value = produkt.pfand;
+            } else {
+                // Neu hinzufügen
+                title.textContent = 'Neues Produkt hinzufügen';
+                form.reset();
+                document.getElementById('editIndex').value = -1;
+                document.getElementById('pfand').value = 0;
+            }
+            
+            modal.style.display = 'block';
+        }
+        
+        // Produkt-Modal schließen
+        function closeProduktModal() {
+            document.getElementById('produktModal').style.display = 'none';
+        }
+        
+        // Produkt-Formular verarbeiten
+        document.getElementById('produktForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const editIndex = parseInt(document.getElementById('editIndex').value);
+            const name = document.getElementById('produktName').value;
+            const einkauf = parseFloat(document.getElementById('einkaufspreis').value);
+            const verkauf = parseFloat(document.getElementById('verkaufspreis').value);
+            const pfand = parseFloat(document.getElementById('pfand').value);
+            
+            if (verkauf <= einkauf) {
+                alert('Verkaufspreis muss höher als Einkaufspreis sein!');
+                return;
+            }
+            
+            const produkt = { name, einkauf, verkauf, pfand };
+            
+            if (editIndex >= 0) {
+                // Bearbeiten
+                produkte[editIndex] = produkt;
+            } else {
+                // Neu hinzufügen
+                produkte.push(produkt);
+            }
+            
+            saveData();
+            updateProduktDropdown();
+            updateTables();
+            closeProduktModal();
+            
+            alert('Produkt erfolgreich gespeichert!');
+        });
+        
+        // Produkt löschen
+        function deleteProdukt(index) {
+            if (confirm('Produkt wirklich löschen?')) {
+                produkte.splice(index, 1);
+                saveData();
+                updateProduktDropdown();
+                updateTables();
+            }
+        }
+        
+        // Eintrag löschen
+        function deleteEintrag(index) {
+            if (confirm('Eintrag wirklich löschen?')) {
+                eingaben.splice(index, 1);
+                saveData();
+                updateTables();
+                updateStats();
+            }
+        }
+        
+        // Tabellen aktualisieren
+        function updateTables() {
+            updateProdukteTable();
+            updateEingabenTable();
+        }
+        
+        // Produkte-Tabelle aktualisieren
+        function updateProdukteTable() {
+            const tbody = document.getElementById('produkteTableBody');
+            tbody.innerHTML = '';
+            
+            produkte.forEach((produkt, index) => {
+                const row = tbody.insertRow();
+                const marge = produkt.verkauf - produkt.einkauf;
+                
+                row.innerHTML = `
+                    <td>${produkt.name}</td>
+                    <td>${produkt.einkauf.toFixed(2)} €</td>
+                    <td>${produkt.verkauf.toFixed(2)} €</td>
+                    <td>${produkt.pfand.toFixed(2)} €</td>
+                    <td style="color: ${marge > 0 ? 'green' : 'red'}">${marge.toFixed(2)} €</td>
+                    <td>
+                        <button class="btn btn-warning" onclick="showProduktModal(${index})">✏️ Bearbeiten</button>
+                        <button class="btn btn-danger" onclick="deleteProdukt(${index})">🗑️ Löschen</button>
+                    </td>
+                `;
+            });
+        }
+        
+        // Eingaben-Tabelle aktualisieren
+        function updateEingabenTable() {
+            const tbody = document.getElementById('eingabenTableBody');
+            tbody.innerHTML = '';
+            
+            eingaben.forEach((eintrag, index) => {
+                const row = tbody.insertRow();
+                
+                let produktText = eintrag.produkt || '-';
+                let mengeText = eintrag.menge || '-';
+                let einnahmenText = '-';
+                let margeText = '-';
+                
+                if (eintrag.typ === 'Kaltgetränk' || eintrag.typ === 'Heißgetränk') {
+                    einnahmenText = `${eintrag.einnahmen.toFixed(2)} €`;
+                    margeText = `${eintrag.marge.toFixed(2)} €`;
+                } else if (eintrag.typ === 'GWS Eingang') {
+                    einnahmenText = `${eintrag.betragGws.toFixed(2)} €`;
+                    produktText = 'GWS Eingang';
+                    mengeText = '-';
+                }
+                
+                row.innerHTML = `
+                    <td>${eintrag.datum}</td>
+                    <td>${eintrag.typ}</td>
+                    <td>${produktText}</td>
+                    <td>${mengeText}</td>
+                    <td>${einnahmenText}</td>
+                    <td style="color: ${eintrag.marge > 0 ? 'green' : (eintrag.marge < 0 ? 'red' : 'black')}">${margeText}</td>
+                    <td>
+                        <button class="btn btn-danger" onclick="deleteEintrag(${index})">🗑️ Löschen</button>
+                    </td>
+                `;
+            });
+        }
+        
+        // Statistiken aktualisieren
+        function updateStats() {
+            const stats = calculateStats();
+            const statsGrid = document.getElementById('statsGrid');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <h3>Einnahmen Kaltgetränke</h3>
+                    <div class="value">${stats.einnahmenKalt.toFixed(2)} €</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Einnahmen Heißgetränke</h3>
+                    <div class="value">${stats.einnahmenHeiss.toFixed(2)} €</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Pfand Einnahmen</h3>
+                    <div class="value">${stats.pfandEinnahmen.toFixed(2)} €</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Einkaufskosten</h3>
+                    <div class="value">${stats.einkaufskosten.toFixed(2)} €</div>
+                </div>
+                <div class="stat-card">
+                    <h3>GWS Eingang (Ist)</h3>
+                    <div class="value">${stats.gwsEingang.toFixed(2)} €</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Gesamtmarge</h3>
+                    <div class="value" style="color: ${stats.gesamtmarge >= 0 ? 'green' : 'red'}">${stats.gesamtmarge.toFixed(2)} €</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Soll-Einnahmen (ohne Pfand)</h3>
+                    <div class="value">${stats.sollEinnahmen.toFixed(2)} €</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Differenz Soll-Ist</h3>
+                    <div class="value" style="color: ${Math.abs(stats.differenz) > 10 ? 'red' : 'green'}">${stats.differenz.toFixed(2)} €</div>
+                </div>
+            `;
+            
+            // Status-Nachricht
+            let statusClass = 'success';
+            let statusText = '✅ Alles in Ordnung';
+            
+            if (Math.abs(stats.differenz) > 10) {
+                statusClass = 'error';
+                statusText = '⚠️ ABWEICHUNG PRÜFEN! Differenz zwischen Soll- und Ist-Einnahmen ist zu groß.';
+            } else if (stats.differenz < 0) {
+                statusClass = 'warning';
+                statusText = '💰 MEHR GELD ALS ERWARTET - Bitte kontrollieren!';
+            }
+            
+            statusMessage.innerHTML = `<div class="${statusClass}">${statusText}</div>`;
+        }
+        
+        // Statistiken berechnen
+        function calculateStats() {
+            let einnahmenKalt = 0;
+            let einnahmenHeiss = 0;
+            let pfandEinnahmen = 0;
+            let einkaufskosten = 0;
+            let gwsEingang = 0;
+            let gesamtmarge = 0;
+            
+            eingaben.forEach(eintrag => {
+                if (eintrag.typ === 'Kaltgetränk') {
+                    einnahmenKalt += eintrag.einnahmen || 0;
+                    pfandEinnahmen += eintrag.pfandEinnahmen || 0;
+                    einkaufskosten += eintrag.kosten || 0;
+                    gesamtmarge += eintrag.marge || 0;
+                } else if (eintrag.typ === 'Heißgetränk') {
+                    einnahmenHeiss += eintrag.einnahmen || 0;
+                    einkaufskosten += eintrag.kosten || 0;
+                    gesamtmarge += eintrag.marge || 0;
+                } else if (eintrag.typ === 'GWS Eingang') {
+                    gwsEingang += eintrag.betragGws || 0;
+                }
+            });
+            
+            const sollEinnahmen = einnahmenKalt + einnahmenHeiss;
+            const differenz = sollEinnahmen - gwsEingang;
+            
+            return {
+                einnahmenKalt,
+                einnahmenHeiss,
+                pfandEinnahmen,
+                einkaufskosten,
+                gwsEingang,
+                gesamtmarge,
+                sollEinnahmen,
+                differenz
+            };
+        }
+        
+        // Daten speichern
+        function saveData() {
+            localStorage.setItem('getraenke-produkte', JSON.stringify(produkte));
+            localStorage.setItem('getraenke-eingaben', JSON.stringify(eingaben));
+        }
+        
+        // Daten laden
+        function loadData() {
+            const savedProdukte = localStorage.getItem('getraenke-produkte');
+            const savedEingaben = localStorage.getItem('getraenke-eingaben');
+            
+            if (savedProdukte) {
+                produkte = JSON.parse(savedProdukte);
+            }
+            
+            if (savedEingaben) {
+                eingaben = JSON.parse(savedEingaben);
+            }
+        }
+        
+        // Modal schließen bei Klick außerhalb
+        window.onclick = function(event) {
+            const modal = document.getElementById('produktModal');
+            if (event.target === modal) {
+                closeProduktModal();
+            }
+        }
+        // Backup-Funktion: Produkte und Eingaben als JSON-Datei herunterladen
+        document.getElementById('backupBtn').addEventListener('click', function() {
+            const data = {
+                produkte: produkte,
+                eingaben: eingaben
+            };
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'getraenke_backup.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // Import-Funktion: JSON-Datei einlesen und localStorage überschreiben
+        document.getElementById('importBtn').addEventListener('click', function() {
+            document.getElementById('importFile').click();
+        });
+        document.getElementById('importFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.produkte && imported.eingaben) {
+                        localStorage.setItem('getraenke-produkte', JSON.stringify(imported.produkte));
+                        localStorage.setItem('getraenke-eingaben', JSON.stringify(imported.eingaben));
+                        alert('Import erfolgreich! Seite wird neu geladen.');
+                        location.reload();
+                    } else {
+                        alert('Ungültiges Backup-Format');
+                    }
+                } catch (err) {
+                    alert('Fehler beim Einlesen der Datei');
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // Reset-Funktion: localStorage leeren und Seite neu laden
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            if (confirm('Wirklich alle Daten löschen und zurücksetzen?')) {
+                localStorage.removeItem('getraenke-produkte');
+                localStorage.removeItem('getraenke-eingaben');
+                location.reload();
+            }
+        });
+    </script>
+</body>
+</html>
