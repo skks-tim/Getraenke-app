@@ -1,0 +1,8 @@
+{
+  "name": "getraenke-app",
+  "version": "1.0.0",
+  "description": "Getraenkeabrechnung",
+  "scripts": {
+    "test": "echo \"No tests specified\""
+  }
+}

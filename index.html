@@ -273,9 +273,16 @@
             .form-row {
                 grid-template-columns: 1fr;
             }
-            
+
             .nav-tabs {
                 flex-direction: column;
+            }
+
+            /* Tabellen auf kleinen Bildschirmen horizontal scrollen */
+            .table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
             }
         }
 
@@ -309,25 +316,75 @@
         body.dark .header p {
             color: #fff;
         }
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .login-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 300px;
+            width: 100%;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        body.dark .login-box { background: #333; color: #eee; }
+        body.dark .login-box input { background: #555; color: #eee; border-color: #777; }
     </style>
 </head>
 <body>
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-box">
+            <h2 data-i18n="loginTitle">Anmeldung</h2>
+            <form id="loginForm">
+                <input type="text" id="loginUsername" placeholder="Benutzername" required>
+                <input type="password" id="loginPassword" placeholder="Passwort" required>
+                <button type="submit" class="btn" data-i18n="loginButton">Login</button>
+            </form>
+            <button id="registerBtn" class="btn" data-i18n="register">Registrieren</button>
+        </div>
+    </div>
+    <div id="app" style="display:none;">
     <div class="header">
-        <h1>🥤 Intelligente Getränkeabrechnung</h1>
-        <p>Zentrale Eingabemaske mit automatischer Berechnung</p>
-        <button id="darkModeToggle" class="btn">🌙 Dark Mode</button>
-        <button id="backupBtn" class="btn">💾 Backup</button>
-        <button id="importBtn" class="btn">📂 Import</button>
+        <h1 data-i18n="title">🥤 Intelligente Getränkeabrechnung</h1>
+        <p data-i18n="subtitle">Zentrale Eingabemaske mit automatischer Berechnung</p>
+        <button id="darkModeToggle" class="btn" data-i18n="darkMode">🌙 Dark Mode</button>
+        <select id="languageSelect" class="btn">
+            <option value="de">DE</option>
+            <option value="en">EN</option>
+        </select>
+        <button id="backupBtn" class="btn" data-i18n="backup">💾 Backup</button>
+        <button id="csvExportBtn" class="btn" data-i18n="csvExport">📄 CSV Export</button>
+        <button id="importBtn" class="btn" data-i18n="import">📂 Import</button>
         <input type="file" id="importFile" accept=".json" style="display:none">
-        <button id="resetBtn" class="btn btn-danger">↻ Reset</button>
+        <button id="resetBtn" class="btn btn-danger" data-i18n="reset">↻ Reset</button>
+        <span id="currentUserDisplay" style="margin-left:10px"></span>
+        <button id="logoutBtn" class="btn" data-i18n="logout">🚪 Logout</button>
     </div>
     <div class="container">
         
         <div class="nav-tabs">
-            <button class="nav-tab active" onclick="showTab('eingaben')">📋 Eingaben</button>
-            <button class="nav-tab" onclick="showTab('produkte')">🥤 Produkte</button>
-            <button class="nav-tab" onclick="showTab('auswertung')">📊 Auswertung</button>
-            <button class="nav-tab" onclick="showTab('anleitung')">📖 Anleitung</button>
+            <button class="nav-tab active" data-i18n="tabEingaben" onclick="showTab('eingaben')">📋 Eingaben</button>
+            <button class="nav-tab" data-i18n="tabProdukte" onclick="showTab('produkte')">🥤 Produkte</button>
+            <button class="nav-tab" data-i18n="tabAuswertung" onclick="showTab('auswertung')">📊 Auswertung</button>
+            <button class="nav-tab" data-i18n="tabTodos" onclick="showTab('todos')">📝 ToDos</button>
+            <button class="nav-tab" data-i18n="tabInventar" onclick="showTab('inventar')">📦 Inventar</button>
+            <button class="nav-tab" data-i18n="tabAnleitung" onclick="showTab('anleitung')">📖 Anleitung</button>
         </div>
         
         <!-- Eingaben Tab -->
@@ -342,7 +399,7 @@
                     <div class="form-group">
                         <label for="typ">Typ:</label>
                         <select id="typ" onchange="toggleFields()" required>
-                            <option value="">Bitte wählen...</option>
+                            <option value="" class="select-placeholder" data-i18n="selectPlaceholder">Bitte wählen...</option>
                             <option value="Kaltgetränk">Kaltgetränk</option>
                             <option value="Heißgetränk">Heißgetränk</option>
                             <option value="GWS Eingang">GWS Eingang</option>
@@ -355,7 +412,7 @@
                         <div class="form-group">
                             <label for="produkt">Produkt:</label>
                             <select id="produkt" onchange="updatePreise()">
-                                <option value="">Bitte wählen...</option>
+                                <option value="" class="select-placeholder" data-i18n="selectPlaceholder">Bitte wählen...</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -441,7 +498,39 @@
             
             <div id="statusMessage"></div>
         </div>
-        
+
+        <!-- ToDo Tab -->
+        <div id="todos" class="tab-content">
+            <h2 data-i18n="todoHeader">Aufgabenliste</h2>
+            <div class="form-row">
+                <input type="text" id="todoText" placeholder="Neue Aufgabe">
+                <button class="btn" id="addTodoBtn" data-i18n="addTodo">Hinzufügen</button>
+            </div>
+            <ul id="todoList" style="margin-top:10px;"></ul>
+        </div>
+
+        <!-- Inventar Tab -->
+        <div id="inventar" class="tab-content">
+            <h2 data-i18n="inventoryHeader">Inventarliste</h2>
+            <form id="inventarForm">
+                <div class="form-row">
+                    <input type="text" id="inventarName" placeholder="Artikel" required>
+                    <input type="number" id="inventarMenge" placeholder="Menge" min="0" step="1" required>
+                    <button type="submit" class="btn" data-i18n="addItem">Hinzufügen</button>
+                </div>
+            </form>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th data-i18n="item">Artikel</th>
+                        <th data-i18n="quantity">Menge</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="inventarTableBody"></tbody>
+            </table>
+        </div>
+
         <!-- Anleitung Tab -->
         <div id="anleitung" class="tab-content">
             <h2>📖 Bedienungsanleitung</h2>
@@ -514,18 +603,112 @@
         </div>
     </div>
 
+    </div>
     <script>
         // Globale Variablen
         let produkte = [];
         let eingaben = [];
+        let todos = [];
+        let inventar = [];
+        let users = [];
+        let currentUser = null;
+        let currentLang = 'de';
+
+        const translations = {
+            de: {
+                title: '🥤 Intelligente Getränkeabrechnung',
+                subtitle: 'Zentrale Eingabemaske mit automatischer Berechnung',
+                loginTitle: 'Anmeldung',
+                loginButton: 'Login',
+                register: 'Registrieren',
+                logout: '🚪 Logout',
+                darkMode: '🌙 Dark Mode',
+                backup: '💾 Backup',
+                csvExport: '📄 CSV Export',
+                import: '📂 Import',
+                reset: '↻ Reset',
+                tabEingaben: '📋 Eingaben',
+                tabProdukte: '🥤 Produkte',
+                tabAuswertung: '📊 Auswertung',
+                tabTodos: '📝 Aufgaben',
+                tabInventar: '📦 Inventar',
+                tabAnleitung: '📖 Anleitung',
+                todoHeader: 'Aufgabenliste',
+                addTodo: 'Hinzufügen',
+                inventoryHeader: 'Inventarliste',
+                addItem: 'Hinzufügen',
+                item: 'Artikel',
+                quantity: 'Menge',
+                selectPlaceholder: 'Bitte wählen...'
+            },
+            en: {
+                title: '🥤 Beverage Accounting',
+                subtitle: 'Central input with automatic calculation',
+                loginTitle: 'Login',
+                loginButton: 'Login',
+                register: 'Register',
+                logout: '🚪 Logout',
+                darkMode: '🌙 Dark Mode',
+                backup: '💾 Backup',
+                csvExport: '📄 CSV Export',
+                import: '📂 Import',
+                reset: '↻ Reset',
+                tabEingaben: '📋 Entries',
+                tabProdukte: '🥤 Products',
+                tabAuswertung: '📊 Statistics',
+                tabTodos: '📝 Tasks',
+                tabInventar: '📦 Inventory',
+                tabAnleitung: '📖 Guide',
+                todoHeader: 'Task List',
+                addTodo: 'Add',
+                inventoryHeader: 'Inventory',
+                addItem: 'Add',
+                item: 'Item',
+                quantity: 'Qty',
+                selectPlaceholder: 'Please choose...'
+            }
+        };
+
+        function applyLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('getraenke-lang', lang);
+            const t = translations[lang] || translations['de'];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+            document.getElementById('loginUsername').placeholder = lang === 'en' ? 'Username' : 'Benutzername';
+            document.getElementById('loginPassword').placeholder = lang === 'en' ? 'Password' : 'Passwort';
+            document.getElementById('todoText').placeholder = lang === 'en' ? 'New task' : 'Neue Aufgabe';
+            document.getElementById('inventarName').placeholder = lang === 'en' ? 'Item' : 'Artikel';
+            document.getElementById('inventarMenge').placeholder = lang === 'en' ? 'Qty' : 'Menge';
+            document.querySelectorAll('.select-placeholder').forEach(el => {
+                el.textContent = t.selectPlaceholder;
+            });
+            updateProduktDropdown();
+        }
         
         // Initialisierung
         document.addEventListener('DOMContentLoaded', function() {
+            loadUsers();
+            const savedLang = localStorage.getItem('getraenke-lang') || 'de';
+            document.getElementById('languageSelect').value = savedLang;
+            applyLanguage(savedLang);
+
+            const savedUser = localStorage.getItem("getraenke-currentUser");
+            if (savedUser) currentUser = JSON.parse(savedUser);
+            if (!currentUser) {
+                document.getElementById("app").style.display = "none";
+                document.getElementById("loginOverlay").style.display = "flex";
+                return;
+            } else {
+                document.getElementById("app").style.display = "block";
+                document.getElementById("currentUserDisplay").textContent = "👤 " + currentUser.username;
+            }
+            loadData();
             // Heutiges Datum setzen
             document.getElementById('datum').valueAsDate = new Date();
             
-            // Daten laden
-            loadData();
             
             // Standard-Produkte hinzufügen falls keine vorhanden
             if (produkte.length === 0) {
@@ -543,6 +726,10 @@
         } else {
             this.textContent = '🌙 Dark Mode';
         }
+    });
+
+    document.getElementById('languageSelect').addEventListener('change', function() {
+        applyLanguage(this.value);
     });
 
     // Hamburger Menu Toggle (nur wenn Element existiert)
@@ -617,7 +804,7 @@
         // Produkt-Dropdown aktualisieren
         function updateProduktDropdown() {
             const select = document.getElementById('produkt');
-            select.innerHTML = '<option value="">Bitte wählen...</option>';
+            select.innerHTML = `<option value="" class="select-placeholder">${translations[currentLang].selectPlaceholder}</option>`;
             
             produkte.forEach((produkt, index) => {
                 const option = document.createElement('option');
@@ -804,11 +991,33 @@
                 updateStats();
             }
         }
+
+        // Todo löschen
+        function deleteTodo(index) {
+            todos.splice(index, 1);
+            saveData();
+            updateTodoList();
+        }
+
+        function toggleTodo(index) {
+            todos[index].done = !todos[index].done;
+            saveData();
+            updateTodoList();
+        }
+
+        // Inventar löschen
+        function deleteInventar(index) {
+            inventar.splice(index, 1);
+            saveData();
+            updateInventarTable();
+        }
         
         // Tabellen aktualisieren
         function updateTables() {
             updateProdukteTable();
             updateEingabenTable();
+            updateTodoList();
+            updateInventarTable();
         }
         
         // Produkte-Tabelle aktualisieren
@@ -866,6 +1075,32 @@
                     <td>
                         <button class="btn btn-danger" onclick="deleteEintrag(${index})">🗑️ Löschen</button>
                     </td>
+                `;
+            });
+        }
+
+        // ToDo-Liste aktualisieren
+        function updateTodoList() {
+            const list = document.getElementById('todoList');
+            list.innerHTML = '';
+            todos.forEach((todo, index) => {
+                const li = document.createElement('li');
+                li.style.textDecoration = todo.done ? 'line-through' : 'none';
+                li.innerHTML = `<input type="checkbox" onclick="toggleTodo(${index})" ${todo.done ? 'checked' : ''}> ${todo.text} <button class="btn btn-danger" onclick="deleteTodo(${index})">🗑️</button>`;
+                list.appendChild(li);
+            });
+        }
+
+        // Inventartabelle aktualisieren
+        function updateInventarTable() {
+            const tbody = document.getElementById('inventarTableBody');
+            tbody.innerHTML = '';
+            inventar.forEach((item, index) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.menge}</td>
+                    <td><button class="btn btn-danger" onclick="deleteInventar(${index})">🗑️</button></td>
                 `;
             });
         }
@@ -966,22 +1201,47 @@
         }
         
         // Daten speichern
-        function saveData() {
-            localStorage.setItem('getraenke-produkte', JSON.stringify(produkte));
-            localStorage.setItem('getraenke-eingaben', JSON.stringify(eingaben));
+        function loadUsers() {
+            const data = localStorage.getItem("getraenke-users");
+            users = data ? JSON.parse(data) : [];
+            if (!users.find(u => u.username === "admin")) {
+                users.push({username: "admin", password: "admin", role: "admin"});
+                saveUsers();
+            }
         }
-        
+
+        function saveUsers() {
+            localStorage.setItem("getraenke-users", JSON.stringify(users));
+        }
+
+        function saveData() {
+            if (currentUser) {
+                localStorage.setItem('getraenke-produkte-' + currentUser.username, JSON.stringify(produkte));
+                localStorage.setItem('getraenke-eingaben-' + currentUser.username, JSON.stringify(eingaben));
+                localStorage.setItem('getraenke-todos-' + currentUser.username, JSON.stringify(todos));
+                localStorage.setItem('getraenke-inventar-' + currentUser.username, JSON.stringify(inventar));
+            }
+        }
         // Daten laden
         function loadData() {
-            const savedProdukte = localStorage.getItem('getraenke-produkte');
-            const savedEingaben = localStorage.getItem('getraenke-eingaben');
-            
+            if (!currentUser) return;
+            const savedProdukte = localStorage.getItem('getraenke-produkte-' + currentUser.username);
+            const savedEingaben = localStorage.getItem('getraenke-eingaben-' + currentUser.username);
+            const savedTodos = localStorage.getItem('getraenke-todos-' + currentUser.username);
+            const savedInventar = localStorage.getItem('getraenke-inventar-' + currentUser.username);
+
             if (savedProdukte) {
                 produkte = JSON.parse(savedProdukte);
             }
-            
+
             if (savedEingaben) {
                 eingaben = JSON.parse(savedEingaben);
+            }
+            if (savedTodos) {
+                todos = JSON.parse(savedTodos);
+            }
+            if (savedInventar) {
+                inventar = JSON.parse(savedInventar);
             }
         }
         
@@ -996,7 +1256,9 @@
         document.getElementById('backupBtn').addEventListener('click', function() {
             const data = {
                 produkte: produkte,
-                eingaben: eingaben
+                eingaben: eingaben,
+                todos: todos,
+                inventar: inventar
             };
             const jsonStr = JSON.stringify(data, null, 2);
             const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -1004,6 +1266,35 @@
             const a = document.createElement('a');
             a.href = url;
             a.download = 'getraenke_backup.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // CSV-Export der Eingaben
+        document.getElementById('csvExportBtn').addEventListener('click', function() {
+            if (eingaben.length === 0) {
+                alert('Keine Eingaben zum Exportieren!');
+                return;
+            }
+
+            // Spalten ermitteln
+            const headers = [];
+            eingaben.forEach(e => {
+                Object.keys(e).forEach(k => {
+                    if (!headers.includes(k)) headers.push(k);
+                });
+            });
+
+            const rows = eingaben.map(e => headers.map(h => e[h] !== undefined ? e[h] : '').join(';'));
+            const csvStr = [headers.join(';'), ...rows].join('\n');
+
+            const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'eingaben.csv';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -1022,8 +1313,10 @@
                 try {
                     const imported = JSON.parse(e.target.result);
                     if (imported.produkte && imported.eingaben) {
-                        localStorage.setItem('getraenke-produkte', JSON.stringify(imported.produkte));
-                        localStorage.setItem('getraenke-eingaben', JSON.stringify(imported.eingaben));
+                        localStorage.setItem('getraenke-produkte-' + currentUser.username, JSON.stringify(imported.produkte));
+                        localStorage.setItem('getraenke-eingaben-' + currentUser.username, JSON.stringify(imported.eingaben));
+                        localStorage.setItem('getraenke-todos-' + currentUser.username, JSON.stringify(imported.todos || []));
+                        localStorage.setItem('getraenke-inventar-' + currentUser.username, JSON.stringify(imported.inventar || []));
                         alert('Import erfolgreich! Seite wird neu geladen.');
                         location.reload();
                     } else {
@@ -1036,13 +1329,72 @@
             reader.readAsText(file);
         });
 
+        // Todos hinzufügen
+        document.getElementById('addTodoBtn').addEventListener('click', function() {
+            const text = document.getElementById('todoText').value.trim();
+            if (!text) return;
+            todos.push({text: text, done: false});
+            document.getElementById('todoText').value = '';
+            saveData();
+            updateTodoList();
+        });
+
+        document.getElementById('inventarForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('inventarName').value.trim();
+            const menge = parseInt(document.getElementById('inventarMenge').value, 10) || 0;
+            if (!name) return;
+            inventar.push({name: name, menge: menge});
+            this.reset();
+            saveData();
+            updateInventarTable();
+        });
+
         // Reset-Funktion: localStorage leeren und Seite neu laden
         document.getElementById('resetBtn').addEventListener('click', function() {
             if (confirm('Wirklich alle Daten löschen und zurücksetzen?')) {
-                localStorage.removeItem('getraenke-produkte');
-                localStorage.removeItem('getraenke-eingaben');
+                localStorage.removeItem('getraenke-produkte-' + currentUser.username);
+                localStorage.removeItem('getraenke-eingaben-' + currentUser.username);
+                localStorage.removeItem('getraenke-todos-' + currentUser.username);
+                localStorage.removeItem('getraenke-inventar-' + currentUser.username);
                 location.reload();
             }
+        });
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUsername').value.trim();
+            const p = document.getElementById('loginPassword').value;
+            const user = users.find(uobj => uobj.username === u && uobj.password === p);
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('getraenke-currentUser', JSON.stringify(user));
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                document.getElementById('currentUserDisplay').textContent = '👤 ' + currentUser.username;
+                loadData();
+                updateProduktDropdown();
+                updateTables();
+                updateStats();
+            } else {
+                alert('Login fehlgeschlagen');
+            }
+        });
+
+        document.getElementById('registerBtn').addEventListener('click', function() {
+            const uname = prompt('Benutzername:');
+            if (!uname) return;
+            if (users.find(u => u.username === uname)) { alert('Benutzer existiert'); return; }
+            const pw = prompt('Passwort:') || '';
+            const user = {username: uname, password: pw, role: 'standard'};
+            users.push(user);
+            saveUsers();
+            alert('Benutzer angelegt');
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            localStorage.removeItem('getraenke-currentUser');
+            currentUser = null;
+            location.reload();
         });
     </script>
 </body>
