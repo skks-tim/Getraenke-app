@@ -378,6 +378,7 @@
             <button class="nav-tab active" onclick="showTab('eingaben')">📋 Eingaben</button>
             <button class="nav-tab" onclick="showTab('produkte')">🥤 Produkte</button>
             <button class="nav-tab" onclick="showTab('auswertung')">📊 Auswertung</button>
+            <button class="nav-tab" onclick="showTab('inventar')">📦 Inventar</button>
             <button class="nav-tab" onclick="showTab('anleitung')">📖 Anleitung</button>
         </div>
         
@@ -485,14 +486,36 @@
         <!-- Auswertung Tab -->
         <div id="auswertung" class="tab-content">
             <h2>Auswertung & Kennzahlen</h2>
-            
+
             <div class="stats-grid" id="statsGrid">
                 <!-- Wird dynamisch gefüllt -->
             </div>
-            
+
             <div id="statusMessage"></div>
         </div>
-        
+
+        <!-- Inventar Tab -->
+        <div id="inventar" class="tab-content">
+            <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:20px;">
+                <h2>Inventarverwaltung</h2>
+                <div>
+                    <select id="inventarProdukt"></select>
+                    <input type="number" id="inventarMenge" placeholder="Menge" style="width:80px;">
+                    <button class="btn btn-success" onclick="adjustInventarFromForm()">Bestand ändern</button>
+                </div>
+            </div>
+
+            <table class="table" id="inventarTable">
+                <thead>
+                    <tr>
+                        <th>Produkt</th>
+                        <th>Bestand</th>
+                    </tr>
+                </thead>
+                <tbody id="inventarTableBody"></tbody>
+            </table>
+        </div>
+
         <!-- Anleitung Tab -->
         <div id="anleitung" class="tab-content">
             <h2>📖 Bedienungsanleitung</h2>
@@ -570,6 +593,7 @@
         // Globale Variablen
         let produkte = [];
         let eingaben = [];
+        let inventar = [];
         let users = [];
         let currentUser = null;
         
@@ -597,6 +621,7 @@
             }
             
             updateProduktDropdown();
+            updateInventarDropdown();
             updateTables();
             updateStats();
     // Dark Mode Toggle
@@ -689,6 +714,7 @@
                 option.textContent = produkt.name;
                 select.appendChild(option);
             });
+            updateInventarDropdown();
         }
         
         // Preise aktualisieren bei Produktauswahl
@@ -773,6 +799,9 @@
             }
             
             eingaben.push(eintrag);
+            if (typ === 'Kaltgetränk' || typ === 'Heißgetränk') {
+                adjustInventar(eintrag.produkt, -eintrag.menge);
+            }
             saveData();
             updateTables();
             updateStats();
@@ -843,6 +872,7 @@
             
             saveData();
             updateProduktDropdown();
+            updateInventarDropdown();
             updateTables();
             closeProduktModal();
             
@@ -855,6 +885,7 @@
                 produkte.splice(index, 1);
                 saveData();
                 updateProduktDropdown();
+                updateInventarDropdown();
                 updateTables();
             }
         }
@@ -862,7 +893,10 @@
         // Eintrag löschen
         function deleteEintrag(index) {
             if (confirm('Eintrag wirklich löschen?')) {
-                eingaben.splice(index, 1);
+                const eintrag = eingaben.splice(index, 1)[0];
+                if (eintrag && (eintrag.typ === 'Kaltgetränk' || eintrag.typ === 'Heißgetränk')) {
+                    adjustInventar(eintrag.produkt, eintrag.menge);
+                }
                 saveData();
                 updateTables();
                 updateStats();
@@ -873,6 +907,7 @@
         function updateTables() {
             updateProdukteTable();
             updateEingabenTable();
+            updateInventarTable();
         }
         
         // Produkte-Tabelle aktualisieren
@@ -932,6 +967,55 @@
                     </td>
                 `;
             });
+        }
+
+        // Inventar-Dropdown aktualisieren
+        function updateInventarDropdown() {
+            const select = document.getElementById('inventarProdukt');
+            if (!select) return;
+            select.innerHTML = '<option value="">Produkt wählen...</option>';
+            produkte.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.name;
+                opt.textContent = p.name;
+                select.appendChild(opt);
+            });
+        }
+
+        // Inventar-Tabelle aktualisieren
+        function updateInventarTable() {
+            const tbody = document.getElementById('inventarTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            inventar.forEach(item => {
+                const row = tbody.insertRow();
+                row.innerHTML = `<td>${item.name}</td><td>${item.quantity}</td>`;
+            });
+        }
+
+        // Bestand aus Formular anpassen
+        function adjustInventarFromForm() {
+            const name = document.getElementById('inventarProdukt').value;
+            const menge = parseInt(document.getElementById('inventarMenge').value);
+            if (!name || isNaN(menge)) {
+                alert('Produkt und Menge angeben!');
+                return;
+            }
+            adjustInventar(name, menge);
+            document.getElementById('inventarMenge').value = '';
+        }
+
+        // Bestand anpassen
+        function adjustInventar(name, diff) {
+            let item = inventar.find(i => i.name === name);
+            if (!item) {
+                item = { name: name, quantity: 0 };
+                inventar.push(item);
+            }
+            item.quantity += diff;
+            if (item.quantity < 0) item.quantity = 0;
+            saveData();
+            updateInventarTable();
         }
         
         // Statistiken aktualisieren
@@ -1047,6 +1131,7 @@
             if (currentUser) {
                 localStorage.setItem('getraenke-produkte-' + currentUser.username, JSON.stringify(produkte));
                 localStorage.setItem('getraenke-eingaben-' + currentUser.username, JSON.stringify(eingaben));
+                localStorage.setItem('getraenke-inventar-' + currentUser.username, JSON.stringify(inventar));
             }
         }
         // Daten laden
@@ -1054,6 +1139,7 @@
             if (!currentUser) return;
             const savedProdukte = localStorage.getItem('getraenke-produkte-' + currentUser.username);
             const savedEingaben = localStorage.getItem('getraenke-eingaben-' + currentUser.username);
+            const savedInventar = localStorage.getItem('getraenke-inventar-' + currentUser.username);
 
             if (savedProdukte) {
                 produkte = JSON.parse(savedProdukte);
@@ -1061,6 +1147,9 @@
 
             if (savedEingaben) {
                 eingaben = JSON.parse(savedEingaben);
+            }
+            if (savedInventar) {
+                inventar = JSON.parse(savedInventar);
             }
         }
         
@@ -1075,7 +1164,8 @@
         document.getElementById('backupBtn').addEventListener('click', function() {
             const data = {
                 produkte: produkte,
-                eingaben: eingaben
+                eingaben: eingaben,
+                inventar: inventar
             };
             const jsonStr = JSON.stringify(data, null, 2);
             const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -1132,6 +1222,9 @@
                     if (imported.produkte && imported.eingaben) {
                         localStorage.setItem('getraenke-produkte-' + currentUser.username, JSON.stringify(imported.produkte));
                         localStorage.setItem('getraenke-eingaben-' + currentUser.username, JSON.stringify(imported.eingaben));
+                        if (imported.inventar) {
+                            localStorage.setItem('getraenke-inventar-' + currentUser.username, JSON.stringify(imported.inventar));
+                        }
                         alert('Import erfolgreich! Seite wird neu geladen.');
                         location.reload();
                     } else {
@@ -1149,6 +1242,7 @@
             if (confirm('Wirklich alle Daten löschen und zurücksetzen?')) {
                 localStorage.removeItem('getraenke-produkte-' + currentUser.username);
                 localStorage.removeItem('getraenke-eingaben-' + currentUser.username);
+                localStorage.removeItem('getraenke-inventar-' + currentUser.username);
                 location.reload();
             }
         });
@@ -1165,6 +1259,7 @@
                 document.getElementById('currentUserDisplay').textContent = '👤 ' + currentUser.username;
                 loadData();
                 updateProduktDropdown();
+                updateInventarDropdown();
                 updateTables();
                 updateStats();
             } else {
