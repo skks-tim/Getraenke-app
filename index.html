@@ -545,10 +545,13 @@
         }
     });
 
-    // Hamburger Menu Toggle
-    document.getElementById('menuToggle').addEventListener('click', function() {
-        document.querySelector('.nav-tabs').classList.toggle('open');
-    });
+    // Hamburger Menu Toggle (nur wenn Element existiert)
+    const menuToggle = document.getElementById('menuToggle');
+    if (menuToggle) {
+        menuToggle.addEventListener('click', function() {
+            document.querySelector('.nav-tabs').classList.toggle('open');
+        });
+    }
         });
         
         // Standard-Produkte hinzufügen
