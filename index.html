@@ -273,9 +273,16 @@
             .form-row {
                 grid-template-columns: 1fr;
             }
-            
+
             .nav-tabs {
                 flex-direction: column;
+            }
+
+            /* Tabellen auf kleinen Bildschirmen horizontal scrollen */
+            .table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
             }
         }
 
@@ -309,17 +316,61 @@
         body.dark .header p {
             color: #fff;
         }
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .login-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 300px;
+            width: 100%;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        body.dark .login-box { background: #333; color: #eee; }
+        body.dark .login-box input { background: #555; color: #eee; border-color: #777; }
     </style>
 </head>
 <body>
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-box">
+            <h2>Anmeldung</h2>
+            <form id="loginForm">
+                <input type="text" id="loginUsername" placeholder="Benutzername" required>
+                <input type="password" id="loginPassword" placeholder="Passwort" required>
+                <button type="submit" class="btn">Login</button>
+            </form>
+            <button id="registerBtn" class="btn">Registrieren</button>
+        </div>
+    </div>
+    <div id="app" style="display:none;">
     <div class="header">
         <h1>🥤 Intelligente Getränkeabrechnung</h1>
         <p>Zentrale Eingabemaske mit automatischer Berechnung</p>
         <button id="darkModeToggle" class="btn">🌙 Dark Mode</button>
         <button id="backupBtn" class="btn">💾 Backup</button>
+        <button id="csvExportBtn" class="btn">📄 CSV Export</button>
         <button id="importBtn" class="btn">📂 Import</button>
         <input type="file" id="importFile" accept=".json" style="display:none">
         <button id="resetBtn" class="btn btn-danger">↻ Reset</button>
+        <span id="currentUserDisplay" style="margin-left:10px"></span>
+        <button id="logoutBtn" class="btn">🚪 Logout</button>
     </div>
     <div class="container">
         
@@ -514,18 +565,31 @@
         </div>
     </div>
 
+    </div>
     <script>
         // Globale Variablen
         let produkte = [];
         let eingaben = [];
+        let users = [];
+        let currentUser = null;
         
         // Initialisierung
         document.addEventListener('DOMContentLoaded', function() {
+            loadUsers();
+            const savedUser = localStorage.getItem("getraenke-currentUser");
+            if (savedUser) currentUser = JSON.parse(savedUser);
+            if (!currentUser) {
+                document.getElementById("app").style.display = "none";
+                document.getElementById("loginOverlay").style.display = "flex";
+                return;
+            } else {
+                document.getElementById("app").style.display = "block";
+                document.getElementById("currentUserDisplay").textContent = "👤 " + currentUser.username;
+            }
+            loadData();
             // Heutiges Datum setzen
             document.getElementById('datum').valueAsDate = new Date();
             
-            // Daten laden
-            loadData();
             
             // Standard-Produkte hinzufügen falls keine vorhanden
             if (produkte.length === 0) {
@@ -966,20 +1030,35 @@
         }
         
         // Daten speichern
-        function saveData() {
-            localStorage.setItem('getraenke-produkte', JSON.stringify(produkte));
-            localStorage.setItem('getraenke-eingaben', JSON.stringify(eingaben));
+        function loadUsers() {
+            const data = localStorage.getItem("getraenke-users");
+            users = data ? JSON.parse(data) : [];
+            if (!users.find(u => u.username === "admin")) {
+                users.push({username: "admin", password: "admin", role: "admin"});
+                saveUsers();
+            }
         }
-        
+
+        function saveUsers() {
+            localStorage.setItem("getraenke-users", JSON.stringify(users));
+        }
+
+        function saveData() {
+            if (currentUser) {
+                localStorage.setItem('getraenke-produkte-' + currentUser.username, JSON.stringify(produkte));
+                localStorage.setItem('getraenke-eingaben-' + currentUser.username, JSON.stringify(eingaben));
+            }
+        }
         // Daten laden
         function loadData() {
-            const savedProdukte = localStorage.getItem('getraenke-produkte');
-            const savedEingaben = localStorage.getItem('getraenke-eingaben');
-            
+            if (!currentUser) return;
+            const savedProdukte = localStorage.getItem('getraenke-produkte-' + currentUser.username);
+            const savedEingaben = localStorage.getItem('getraenke-eingaben-' + currentUser.username);
+
             if (savedProdukte) {
                 produkte = JSON.parse(savedProdukte);
             }
-            
+
             if (savedEingaben) {
                 eingaben = JSON.parse(savedEingaben);
             }
@@ -1010,6 +1089,35 @@
             URL.revokeObjectURL(url);
         });
 
+        // CSV-Export der Eingaben
+        document.getElementById('csvExportBtn').addEventListener('click', function() {
+            if (eingaben.length === 0) {
+                alert('Keine Eingaben zum Exportieren!');
+                return;
+            }
+
+            // Spalten ermitteln
+            const headers = [];
+            eingaben.forEach(e => {
+                Object.keys(e).forEach(k => {
+                    if (!headers.includes(k)) headers.push(k);
+                });
+            });
+
+            const rows = eingaben.map(e => headers.map(h => e[h] !== undefined ? e[h] : '').join(';'));
+            const csvStr = [headers.join(';'), ...rows].join('\n');
+
+            const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'eingaben.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
         // Import-Funktion: JSON-Datei einlesen und localStorage überschreiben
         document.getElementById('importBtn').addEventListener('click', function() {
             document.getElementById('importFile').click();
@@ -1022,8 +1130,8 @@
                 try {
                     const imported = JSON.parse(e.target.result);
                     if (imported.produkte && imported.eingaben) {
-                        localStorage.setItem('getraenke-produkte', JSON.stringify(imported.produkte));
-                        localStorage.setItem('getraenke-eingaben', JSON.stringify(imported.eingaben));
+                        localStorage.setItem('getraenke-produkte-' + currentUser.username, JSON.stringify(imported.produkte));
+                        localStorage.setItem('getraenke-eingaben-' + currentUser.username, JSON.stringify(imported.eingaben));
                         alert('Import erfolgreich! Seite wird neu geladen.');
                         location.reload();
                     } else {
@@ -1039,10 +1147,46 @@
         // Reset-Funktion: localStorage leeren und Seite neu laden
         document.getElementById('resetBtn').addEventListener('click', function() {
             if (confirm('Wirklich alle Daten löschen und zurücksetzen?')) {
-                localStorage.removeItem('getraenke-produkte');
-                localStorage.removeItem('getraenke-eingaben');
+                localStorage.removeItem('getraenke-produkte-' + currentUser.username);
+                localStorage.removeItem('getraenke-eingaben-' + currentUser.username);
                 location.reload();
             }
+        });
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUsername').value.trim();
+            const p = document.getElementById('loginPassword').value;
+            const user = users.find(uobj => uobj.username === u && uobj.password === p);
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('getraenke-currentUser', JSON.stringify(user));
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                document.getElementById('currentUserDisplay').textContent = '👤 ' + currentUser.username;
+                loadData();
+                updateProduktDropdown();
+                updateTables();
+                updateStats();
+            } else {
+                alert('Login fehlgeschlagen');
+            }
+        });
+
+        document.getElementById('registerBtn').addEventListener('click', function() {
+            const uname = prompt('Benutzername:');
+            if (!uname) return;
+            if (users.find(u => u.username === uname)) { alert('Benutzer existiert'); return; }
+            const pw = prompt('Passwort:') || '';
+            const user = {username: uname, password: pw, role: 'standard'};
+            users.push(user);
+            saveUsers();
+            alert('Benutzer angelegt');
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            localStorage.removeItem('getraenke-currentUser');
+            currentUser = null;
+            location.reload();
         });
     </script>
 </body>
