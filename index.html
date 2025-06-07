@@ -499,7 +499,7 @@
             <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:20px;">
                 <h2>Inventarverwaltung</h2>
                 <div>
-                    <select id="inventarProdukt"></select>
+                    <input type="text" id="inventarProdukt" placeholder="Produktname">
                     <input type="number" id="inventarMenge" placeholder="Menge" style="width:80px;">
                     <button class="btn btn-success" onclick="adjustInventarFromForm()">Bestand ändern</button>
                 </div>
@@ -969,17 +969,9 @@
             });
         }
 
-        // Inventar-Dropdown aktualisieren
+        // Inventar-Eingabefeld wird nicht mehr über Produkte gefüllt
         function updateInventarDropdown() {
-            const select = document.getElementById('inventarProdukt');
-            if (!select) return;
-            select.innerHTML = '<option value="">Produkt wählen...</option>';
-            produkte.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.name;
-                opt.textContent = p.name;
-                select.appendChild(opt);
-            });
+            // Funktion bleibt leer für Abwärtskompatibilität
         }
 
         // Inventar-Tabelle aktualisieren
